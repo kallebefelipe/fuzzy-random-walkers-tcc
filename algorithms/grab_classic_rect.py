@@ -9,6 +9,19 @@ import scipy.io as sio
 import scipy.misc
 
 
+def normalize_labels(labels_rw):
+    new_labels = []
+    for x in labels_rw:
+        line = []
+        for y in x:
+            if y == 2:
+                line.append(0)
+            else:
+                line.append(y)
+        new_labels.append(line)
+    return np.array(new_labels)
+
+
 def run():
     seeds = 6
     medias = []
@@ -75,27 +88,27 @@ def run():
                 img=image, mask=markers, rect=rect, bgdModel=bgdModel,
                 fgdModel=fgdModel, iterCount=5, mode=cv2.GC_INIT_WITH_RECT)
 
+            labels_rw = labels_rw[0]
             contorno = \
                 segmentation.mark_boundaries(image, ouro,
                                              color=(0, 0, 0))
             contorno = \
                 segmentation.mark_boundaries(contorno,
-                                             labels_rw[0],
+                                             labels_rw,
                                              color=(0, 1, 0))
             name = \
                 '../data/output/classico/grab_rect/images/'+i+'.jpg'
             scipy.misc.imsave(name, contorno)
+            labels_rw = (2-labels_rw)
+            labels_rw = normalize_labels(labels_rw)
 
-            labels_rw = (2-labels_rw[0])
-
-            TP = sum((labels_rw == 1) & (ouro == 255))
+            TP = sum((labels_rw == 255) & (ouro == 255))
             somaTP = sum(TP)
             TN = sum((labels_rw == 0) & (ouro == 0))
             somaTN = sum(TN)
             FN = sum((labels_rw == 0) & (ouro == 255))
-
-            FP = sum((labels_rw == 1) & (ouro == 0))
             somaFN = sum(FN)
+            FP = sum((labels_rw == 255) & (ouro == 0))
             somaFP = sum(FP)
 
             linha.append(str(somaTP))
