@@ -9,10 +9,23 @@ import scipy.io as sio
 import scipy.misc
 
 
+def normalize_labels(labels_rw):
+    new_labels = []
+    for x in labels_rw:
+        line = []
+        for y in x:
+            if y == 2:
+                line.append(0)
+            else:
+                line.append(y)
+        new_labels.append(line)
+    return np.array(new_labels)
+
+
 def run():
     seeds = 6
     medias = []
-    with open('../data/output/classico/grab_marks/resultado.csv', "w") as resultado:
+    with open('../data/output/classico/waters/resultado.csv', "w") as resultado:
         output = csv.writer(resultado, quoting=csv.QUOTE_ALL)
 
         cabecalho_1 = []
@@ -57,9 +70,9 @@ def run():
                     val = oct_cells[x, y]
 
                     if val == 1:
-                        markers[x][y] = 1
-                    if val == -1:
                         markers[x][y] = 0
+                    if val == -1:
+                        markers[x][y] = 2
 
             ouro = io.imread('../seeds/imagens/'+i+'_bin.bmp')
 
@@ -67,13 +80,11 @@ def run():
             linha.append(i)
 
             pos = 0
-            bgdModel = np.zeros((1, 65), np.float64)
-            fgdModel = np.zeros((1, 65), np.float64)
 
-            labels_rw, bgdModel, fgdModel = cv2.grabCut(
-                img=image, mask=markers, rect=None, bgdModel=bgdModel,
-                fgdModel=fgdModel, iterCount=10, mode=cv2.GC_INIT_WITH_MASK)
+            labels_rw = cv2.watershed(
+                image, markers)
 
+            labels_rw = labels_rw[0]
             contorno = \
                 segmentation.mark_boundaries(image, ouro,
                                              color=(0, 0, 0))
@@ -82,18 +93,18 @@ def run():
                                              labels_rw,
                                              color=(0, 1, 0))
             name = \
-                '../data/output/classico/grab_marks/images/'+i+'.jpg'
+                '../data/output/classico/waters/images/'+i+'.jpg'
             scipy.misc.imsave(name, contorno)
             labels_rw = (2-labels_rw)
+            labels_rw = normalize_labels(labels_rw)
 
-            TP = sum((labels_rw == 1) & (ouro == 255))
+            TP = sum((labels_rw == 255) & (ouro == 255))
             somaTP = sum(TP)
             TN = sum((labels_rw == 0) & (ouro == 0))
             somaTN = sum(TN)
             FN = sum((labels_rw == 0) & (ouro == 255))
-
-            FP = sum((labels_rw == 1) & (ouro == 0))
             somaFN = sum(FN)
+            FP = sum((labels_rw == 255) & (ouro == 0))
             somaFP = sum(FP)
 
             linha.append(str(somaTP))
@@ -108,7 +119,6 @@ def run():
             linha.append(str(somaFN))
             soma[pos] += somaFN
             pos += 1
-
             XOR = (somaFP + somaFN)/(somaTP + somaFN)
             Precision = somaTP/float(somaTP + somaFP)
             Sensitivity = somaTP/float(somaTP + somaFN)
@@ -140,9 +150,8 @@ def run():
                 media.append(str(valor/len(images)))
             media[0] = seeds
             medias.append(media)
-            output.writerow(media)
 
-            with open('../data/output/classico/grab_marks/result_medias.csv',
+            with open('../data/output/classico/grab_rect/result_medias.csv',
                       "w") as result_medias:
                 output_2 = csv.writer(result_medias, quoting=csv.QUOTE_ALL)
 
