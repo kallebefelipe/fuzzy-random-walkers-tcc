@@ -1,7 +1,7 @@
 from pylab import *
 from numpy import *
 
-from pygraph.classes.digraph import digraph
+from pygraph.classes.directed_graph import DirectedGraph
 from pygraph.algorithms.minmax import maximum_flow
 
 import bayes
@@ -37,8 +37,10 @@ def build_bayes_graph(im, labels, sigma=1e2, kappa=1):
     prob_bg = prob[1]
 
     # create graph with m*n+2 nodes
-    gr = digraph()
-    gr.add_nodes(range(m*n+2))
+    gr = DirectedGraph()
+
+    for i in range(0, m*n+2):
+        gr.new_node()
 
     source = m*n
     sink = m*n+1
