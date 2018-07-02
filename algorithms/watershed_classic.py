@@ -1,8 +1,10 @@
 from constants import images
+from scipy import ndimage
 from skimage import io
 from skimage import segmentation
-import cv2
+from skimage.morphology import watershed
 import csv
+import cv2
 import numpy as np
 import scipy.io
 import scipy.io as sio
@@ -58,21 +60,22 @@ def run():
 
         soma = [0] * cont
         for i in images:
-            image = cv2.imread('../seeds/imagens/'+i+'.bmp')
+            print(i)
+            image = cv2.imread('../seeds/imagens/'+i+'.bmp',)
             markers = np.zeros((image.shape[0], image.shape[1]))
             mat_contents = sio.loadmat('../seeds/labels_roi/'+i+'.mat')
             oct_cells = mat_contents['labels']
             val = oct_cells[0, 1]
-            markers = np.zeros((image.shape[0], image.shape[1]), np.uint8)
+            markers = np.zeros((image.shape[0], image.shape[1]))
 
             for x in range(0, image.shape[0]):
                 for y in range(0, image.shape[1]):
                     val = oct_cells[x, y]
 
                     if val == 1:
-                        markers[x][y] = 0
+                        markers[x][y] = 1
                     if val == -1:
-                        markers[x][y] = 2
+                        markers[x][y] = -1
 
             ouro = io.imread('../seeds/imagens/'+i+'_bin.bmp')
 
@@ -80,9 +83,9 @@ def run():
             linha.append(i)
 
             pos = 0
+            distance = ndimage.distance_transform_edt(image)
 
-            labels_rw = cv2.watershed(
-                image, markers)
+            labels_rw = watershed(image, markers)
 
             labels_rw = labels_rw[0]
             contorno = \
@@ -151,7 +154,7 @@ def run():
             media[0] = seeds
             medias.append(media)
 
-            with open('../data/output/classico/grab_rect/result_medias.csv',
+            with open('../data/output/classico/waters/result_medias.csv',
                       "w") as result_medias:
                 output_2 = csv.writer(result_medias, quoting=csv.QUOTE_ALL)
 

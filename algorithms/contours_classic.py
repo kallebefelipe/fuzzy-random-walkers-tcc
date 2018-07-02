@@ -1,30 +1,39 @@
 from constants import images
 from skimage import io
 from skimage import segmentation
+from skimage.segmentation import active_contour
 import cv2
 import csv
 import numpy as np
 import scipy.io
 import scipy.io as sio
 import scipy.misc
-from growcut.growcut import growcut_python
-from datetime import datetime
 
 
 def normalize_labels(labels_rw):
     new_labels = []
-    for label_i in range(0, len(labels_rw)):
-        new_col = []
-        for label_j in range(0, len(labels_rw[label_i])):
-            new_col.append(int(labels_rw[label_i][label_j]))
-        new_labels.append(new_col)
+    for x in labels_rw:
+        line = []
+        for y in x:
+            if y == 2:
+                line.append(0)
+            else:
+                line.append(y)
+        new_labels.append(line)
     return np.array(new_labels)
+
+
+def normalize_output(image, labels_rw):
+    image_zero = np.zeros((image.shape[0], image.shape[1]), np.uint8)
+    for label in labels_rw:
+        image_zero[label[0]][label[1]] = 1
+    return image_zero
 
 
 def run():
     seeds = 6
     medias = []
-    with open('../data/output/classico/grow_cut/resultado.csv', "w") as resultado:
+    with open('../data/output/classico/contours/resultado.csv', "w") as resultado:
         output = csv.writer(resultado, quoting=csv.QUOTE_ALL)
 
         cabecalho_1 = []
@@ -62,29 +71,30 @@ def run():
             mat_contents = sio.loadmat('../seeds/labels_roi/'+i+'.mat')
             oct_cells = mat_contents['labels']
             val = oct_cells[0, 1]
-            markers = np.zeros((image.shape[0], image.shape[1], 2))
+            markers = np.zeros((image.shape[0], image.shape[1]))
+            seeds = []
 
             for x in range(0, image.shape[0]):
                 for y in range(0, image.shape[1]):
                     val = oct_cells[x, y]
 
                     if val == 1:
-                        markers[x][y] = 1.0
+                        markers[x][y] = 0
                     if val == -1:
-                        markers[x][y] = -1
+                        seeds.append([x, y])
+                        markers[x][y] = 2
 
             ouro = io.imread('../seeds/imagens/'+i+'_bin.bmp')
-
+            seeds = np.array(seeds, dtype=np.float64)
             linha = []
             linha.append(i)
 
             pos = 0
-            inicio = datetime.now()
-            labels_rw = growcut_python(image, markers)
-            fim = datetime.now()
-            print(str(fim - inicio))
 
-            labels_rw = np.array(labels_rw, dtype=np.int32)
+            labels_rw = active_contour(
+                image, seeds, alpha=0.015, beta=10, gamma=0.001)
+            labels_rw = normalize_output(image, labels_rw)
+
             contorno = \
                 segmentation.mark_boundaries(image, ouro,
                                              color=(0, 0, 0))
@@ -93,18 +103,18 @@ def run():
                                              labels_rw,
                                              color=(0, 1, 0))
             name = \
-                '../data/output/classico/grow_cut/images/'+i+'.jpg'
+                '../data/output/classico/contours/images/'+i+'.jpg'
             scipy.misc.imsave(name, contorno)
-            # labels_rw = (2-labels_rw)
-            # labels_rw = normalize_labels(labels_rw)
+            labels_rw = (2-labels_rw)
+            labels_rw = normalize_labels(labels_rw)
 
-            TP = sum((labels_rw == 2) & (ouro == 255))
+            TP = sum((labels_rw == 255) & (ouro == 255))
             somaTP = sum(TP)
             TN = sum((labels_rw == 0) & (ouro == 0))
             somaTN = sum(TN)
             FN = sum((labels_rw == 0) & (ouro == 255))
             somaFN = sum(FN)
-            FP = sum((labels_rw == 2) & (ouro == 0))
+            FP = sum((labels_rw == 255) & (ouro == 0))
             somaFP = sum(FP)
 
             linha.append(str(somaTP))
@@ -151,7 +161,7 @@ def run():
             media[0] = seeds
             medias.append(media)
 
-            with open('../data/output/classico/grow_cut/result_medias.csv',
+            with open('../data/output/classico/contours/result_medias.csv',
                       "w") as result_medias:
                 output_2 = csv.writer(result_medias, quoting=csv.QUOTE_ALL)
 

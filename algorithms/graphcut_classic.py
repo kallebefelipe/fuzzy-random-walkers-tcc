@@ -68,7 +68,6 @@ def run():
             linha.append(i)
 
             pos = 0
-            import ipdb; ipdb.set_trace()
             labels_rw = build_bayes_graph(
                 im=image, labels=markers)
 
