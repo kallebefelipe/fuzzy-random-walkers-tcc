@@ -11,8 +11,8 @@ import math
 import scipy.io
 import scipy.misc
 
-function = 'triangular'
 function = 'fuzzy'
+function = 'triangular'
 
 medias = []
 numero_marcacao = []
@@ -88,36 +88,36 @@ with open('../data/output/rw_fuzzy/'+function+'/resultado.csv', "w") as \
         copia = io.imread('../seeds/imagens/'+i+'.bmp')
         imageShape = np.ones((image.shape[0], image.shape[1]))
 
+        xm = 0
+        ym = 0
+        ax = 1
+        ay = 1
+        desviox = 0
+        desvioy = 0
+        constantex = 1
+        constantey = 1
+
+        for x in range(0, numbMarkx):
+            xm = xm + posX[x]
+        xm = xm / numbMarkx
+
+        for y in range(0, numbMarky):
+            ym = ym + posY[y]
+        ym = ym / numbMarky
+
+        somadorx = 0
+
+        for x in range(0, numbMarkx):
+            somadorx = somadorx + (math.pow((posX[x] - xm), 2))
+        desviox = sqrt(somadorx / float(numbMarkx-1))
+        somadory = 0
+
+        for y in range(0, numbMarky):
+            somadory = somadory + (math.pow((posY[y] - ym), 2))
+
+        desvioy = sqrt(somadory / float(numbMarky-1))
+
         if function == 'fuzzy':
-
-            xm = 0
-            ym = 0
-            ax = 1
-            ay = 1
-            desviox = 0
-            desvioy = 0
-            constantex = 1
-            constantey = 1
-
-            for x in range(0, numbMarkx):
-                xm = xm + posX[x]
-            xm = xm / numbMarkx
-
-            for y in range(0, numbMarky):
-                ym = ym + posY[y]
-            ym = ym / numbMarky
-
-            somadorx = 0
-
-            for x in range(0, numbMarkx):
-                somadorx = somadorx + (math.pow((posX[x] - xm), 2))
-            desviox = sqrt(somadorx / float(numbMarkx-1))
-            somadory = 0
-
-            for y in range(0, numbMarky):
-                somadory = somadory + (math.pow((posY[y] - ym), 2))
-
-            desvioy = sqrt(somadory / float(numbMarky-1))
 
             for x in range(0, image.shape[0]):
                 for y in range(0, image.shape[1]):
@@ -126,14 +126,30 @@ with open('../data/output/rw_fuzzy/'+function+'/resultado.csv', "w") as \
                     imageShape[x, y] = \
                         math.exp(((-1)*math.pow((x_n-xm), 2)) / float(2 * constantex * desviox) + ((-1) * math.pow((y_n-ym), 2))/float(2*constantey*desvioy))
         elif function == 'triangular':
-            a = 1
-            b = 2
-            c = 3
+            beta_func = 6
+            ax = xm - (desviox*beta_func)
+            cx = xm + (desviox*beta_func)
+            ay = ym - (desvioy*beta_func)
+            cy = ym + (desvioy*beta_func)
+
             for x in range(0, image.shape[0]):
                 for y in range(0, image.shape[1]):
                     x_n = x/float(image.shape[0])
                     y_n = y/float(image.shape[1])
-                    imageShape[x, y] = max(min((x_n-a)/(b-a), (c-x_n)/(c-b)), 0) * max(min((y_n-a)/(b-a), (c-y_n)/(c-b)), 0)
+
+                    ma = max(min((x_n-ax)/(xm-ax), (cx-x_n)/(cx-xm)), 0)
+                    mb = max(min((y_n-ay)/(ym-ay), (cy-y_n)/(cy-y_n)), 0)
+                    imageShape[x, y] = min(ma, mb)
+        elif function == 'trapezoidal':
+            a = 1
+            b = 2
+            c = 3
+            d = 4
+            for x in range(0, image.shape[0]):
+                for y in range(0, image.shape[1]):
+                    x_n = x
+                    y_n = y
+                    imageShape[x, y] = max(min((x_n-a)/(b-a), (d-x_n)/(d-c)), 0) * max(min((y_n-a)/(b-a), (d-y_n)/(d-c)), 0)
 
         for x in range(0, image.shape[0]):
             for y in range(0, image.shape[1]):
@@ -144,16 +160,18 @@ with open('../data/output/rw_fuzzy/'+function+'/resultado.csv', "w") as \
 
         contorno = segmentation.mark_boundaries(image, copia,
                                                 color=(1, 0, 0))
+        name = '../data/output/rw_fuzzy/'+function+'/imagens/'+i+'-contorno.jpg'
+        scipy.misc.imsave(name, contorno)
 
         for x in range(0, image.shape[0]):
             for y in range(0, image.shape[1]):
+                val1 = oct_cells[x, y]
                 val2 = copia[x, y]
+
+                if val1 == 1:
+                    markers[x][y] = 1
                 if val2 == 0:
                     markers[x][y] = 2
-
-        for pos in range(0, seeds):
-
-            markers[posX_origem[pos]][posY_origem[pos]] = 1
 
         ouro = io.imread('../seeds/imagens/'+i+'_bin.bmp')
 
