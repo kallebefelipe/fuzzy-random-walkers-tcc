@@ -13,6 +13,7 @@ import scipy.misc
 
 function = 'fuzzy'
 function = 'triangular'
+function = 'trapezoidal'
 
 medias = []
 numero_marcacao = []
@@ -141,15 +142,24 @@ with open('../data/output/rw_fuzzy/'+function+'/resultado.csv', "w") as \
                     mb = max(min((y_n-ay)/(ym-ay), (cy-y_n)/(cy-y_n)), 0)
                     imageShape[x, y] = min(ma, mb)
         elif function == 'trapezoidal':
-            a = 1
-            b = 2
-            c = 3
-            d = 4
+            beta_func = 4
+            ax = xm - (desviox*beta_func)
+            bx = xm - ((desviox*beta_func)/2)
+            cx = xm + ((desviox*beta_func)/2)
+            dx = xm + (desviox*beta_func)
+
+            ay = ym - (desvioy*beta_func)
+            bb = ym - ((desvioy*beta_func)/2)
+            bc = ym + ((desvioy*beta_func)/2)
+            bd = ym + (desvioy*beta_func)
+
             for x in range(0, image.shape[0]):
                 for y in range(0, image.shape[1]):
-                    x_n = x
-                    y_n = y
-                    imageShape[x, y] = max(min((x_n-a)/(b-a), (d-x_n)/(d-c)), 0) * max(min((y_n-a)/(b-a), (d-y_n)/(d-c)), 0)
+                    x_n = x/float(image.shape[0])
+                    y_n = y/float(image.shape[1])
+                    ma = max(min([(x_n-ax)/(bx-ax), 1, (dx-x_n)/(dx-cx)]), 0)
+                    mb = max(min([(y_n-ay)/(bb-ay), 1, (bd-y_n)/(bd-bc)]), 0)
+                    imageShape[x, y] = min(ma, mb)
 
         for x in range(0, image.shape[0]):
             for y in range(0, image.shape[1]):
