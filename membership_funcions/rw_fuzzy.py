@@ -13,9 +13,11 @@ import scipy.misc
 from math import exp
 
 function = 'fuzzy'
-function = 'triangular'
-function = 'trapezoidal'
-function = 'gaussian'
+# function = 'triangular'
+# function = 'trapezoidal'
+# function = 'gaussian'
+# function = 'bell'
+function = 'mult_gaussian'
 
 medias = []
 numero_marcacao = []
@@ -80,8 +82,8 @@ with open('../data/output/rw_fuzzy/'+function+'/resultado.csv', "w") as \
                 val1 = oct_cells[x, y]
 
                 if val1 == 1:
-                    posX[numbMarkx] = x         #atribuicao no vetor de x's
-                    posY[numbMarky] = y         #atribuicao no vetor de y's
+                    posX[numbMarkx] = x         # atribuicao no vetor de x's
+                    posY[numbMarky] = y         # atribuicao no vetor de y's
                     numbMarkx = numbMarkx + 1
                     numbMarky = numbMarky + 1
         colb = 1
@@ -164,13 +166,49 @@ with open('../data/output/rw_fuzzy/'+function+'/resultado.csv', "w") as \
                     imageShape[x, y] = min(ma, mb)
         elif function == 'gaussian':
             alfa = 10
-            imageShape[x, y] = exp(-((x_n-xm) ** 2)/(2*alfa*(
-                desviox ** 2))) * exp(-((y_n-ym) ^ 2)/(2*alfa*(desvioy ** 2)))
+            for x in range(0, image.shape[0]):
+                for y in range(0, image.shape[1]):
+                    x_n = x/float(image.shape[0])
+                    y_n = y/float(image.shape[1])
+                    imageShape[x, y] = exp(-((x_n-xm) ** 2)/(2*alfa*(
+                        desviox ** 2))) * exp(-((y_n-ym) ** 2)/(2*alfa*(desvioy ** 2)))
         elif function == 'bell':
             b = 6
-            ma = 1/((abs((x_n/(2*desviox))-(xm/(2*desviox)))**(2*b))+1)
-            mb = 1/((abs((y_n/(2*desvioy))-(ym/(2*desvioy)))**(2*b))+1)
-            imageShape[x, y] = ma*mb;
+            for x in range(0, image.shape[0]):
+                for y in range(0, image.shape[1]):
+                    x_n = x/float(image.shape[0])
+                    y_n = y/float(image.shape[1])
+                    ma = 1/((abs((x_n/(2*desviox))-(xm/(2*desviox)))**(2*b))+1)
+                    mb = 1/((abs((y_n/(2*desvioy))-(ym/(2*desvioy)))**(2*b))+1)
+                    imageShape[x, y] = ma*mb
+        elif function == 'mult_gaussian':
+
+            for x in range(0, image.shape[0]):
+                for y in range(0, image.shape[1]):
+                    x_n = x/float(image.shape[0])
+                    y_n = y/float(image.shape[1])
+
+                    p_alfa = 1
+
+                    if max(desvioy, desviox) >= 27:
+                        desv = min(desvioy, desviox)
+                    else:
+                        desv = max(desvioy, desviox)
+
+                    desv = max(desvioy, desviox)
+
+                    probObj_p1 = exp(-((x_n-posX[0])**2)/(2*p_alfa*(desv**2))) * exp(-((y_n-posY[0])**2)/(2*p_alfa*(desv**2)))
+                    probObj_p2 = exp(-((x_n-posX[1])**2)/(2*p_alfa*(desv**2))) * exp(-((y_n-posY[1])**2)/(2*p_alfa*(desv**2)))
+                    probObj_p3 = exp(-((x_n-posX[2])**2)/(2*p_alfa*(desv**2))) * exp(-((y_n-posY[2])**2)/(2*p_alfa*(desv**2)))
+                    probObj_p4 = exp(-((x_n-posX[3])**2)/(2*p_alfa*(desv**2))) * exp(-((y_n-posY[3])**2)/(2*p_alfa*(desv**2)))
+                    probObj_p5 = exp(-((x_n-posX[4])**2)/(2*p_alfa*(desv**2))) * exp(-((y_n-posY[4])**2)/(2*p_alfa*(desv**2)))
+                    probObj_p6 = exp(-((x_n-posX[5])**2)/(2*p_alfa*(desv**2))) * exp(-((y_n-posY[5])**2)/(2*p_alfa*(desv**2)))
+
+                    alfacenter = 1
+
+                    probObjcenter = exp(-((x_n-desviox)**2)/(2*alfacenter*(desviox**2))) * exp(-((y_n-desvioy)**2)/(2*alfacenter*(desvioy**2)))
+                    probObjcenter = 0
+                    imageShape[x, y] = max([probObj_p1, probObj_p2, probObj_p3, probObj_p4, probObj_p5, probObj_p6, probObjcenter])
 
         for x in range(0, image.shape[0]):
             for y in range(0, image.shape[1]):
