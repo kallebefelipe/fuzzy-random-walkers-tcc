@@ -10,10 +10,12 @@ import csv
 import math
 import scipy.io
 import scipy.misc
+from math import exp
 
 function = 'fuzzy'
 function = 'triangular'
 function = 'trapezoidal'
+function = 'gaussian'
 
 medias = []
 numero_marcacao = []
@@ -160,6 +162,15 @@ with open('../data/output/rw_fuzzy/'+function+'/resultado.csv', "w") as \
                     ma = max(min([(x_n-ax)/(bx-ax), 1, (dx-x_n)/(dx-cx)]), 0)
                     mb = max(min([(y_n-ay)/(bb-ay), 1, (bd-y_n)/(bd-bc)]), 0)
                     imageShape[x, y] = min(ma, mb)
+        elif function == 'gaussian':
+            alfa = 10
+            imageShape[x, y] = exp(-((x_n-xm) ** 2)/(2*alfa*(
+                desviox ** 2))) * exp(-((y_n-ym) ^ 2)/(2*alfa*(desvioy ** 2)))
+        elif function == 'bell':
+            b = 6
+            ma = 1/((abs((x_n/(2*desviox))-(xm/(2*desviox)))**(2*b))+1)
+            mb = 1/((abs((y_n/(2*desvioy))-(ym/(2*desvioy)))**(2*b))+1)
+            imageShape[x, y] = ma*mb;
 
         for x in range(0, image.shape[0]):
             for y in range(0, image.shape[1]):
